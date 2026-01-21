@@ -1,0 +1,5 @@
+{
+  "name": "智投热点助手 (DeepSeek/OpenAI版)",
+  "description": "基于热点的A股投资决策辅助应用。支持 OpenAI 与 DeepSeek 双引擎切换，集成模拟 Akshare/RQdata 数据分析逻辑。",
+  "requestFramePermissions": []
+}
