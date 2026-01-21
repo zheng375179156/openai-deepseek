@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, TrendingUp, Users, FileText, Zap, Search, Menu, X, Clock, RefreshCw, Calendar, Loader2, Globe, Filter, Database, AlertTriangle, ExternalLink, Info, Settings, PieChart, Tag, Save, Key, Server, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, Users, FileText, Zap, Search, Menu, X, Clock, RefreshCw, Calendar, Loader2, Globe, Filter, Database, AlertTriangle, ExternalLink, Info, Settings, PieChart, Tag, Save, Server, ShieldCheck } from 'lucide-react';
 import { Hotspot, InvestorProfile, TrackingRecord, NewsItem, AIProvider, Holding, Stock, MarketSentiment } from './types';
 import HotspotCard from './components/HotspotCard.tsx';
 import NewsModule from './components/NewsModule.tsx';
@@ -19,26 +19,22 @@ interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentProvider: AIProvider;
-  onSave: (provider: AIProvider, deepseekKey: string, openaiKey: string) => void;
+  onSave: (provider: AIProvider) => void;
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentProvider, onSave }) => {
   const [provider, setProvider] = useState<AIProvider>(currentProvider);
-  const [deepseekKey, setDeepseekKey] = useState('');
-  const [openaiKey, setOpenaiKey] = useState('');
 
   useEffect(() => {
     if (isOpen) {
       setProvider(currentProvider);
-      setDeepseekKey(localStorage.getItem('deepseek_api_key') || '');
-      setOpenaiKey(localStorage.getItem('openai_api_key') || '');
     }
   }, [isOpen, currentProvider]);
 
   const handleSave = () => {
-    onSave(provider, deepseekKey, openaiKey);
+    onSave(provider);
     onClose();
-  };
+  };  
 
   if (!isOpen) return null;
 
@@ -90,43 +86,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentP
           </div>
 
           <div className="space-y-4">
-            {provider === 'DeepSeek' && (
-              <div className="animate-fade-in">
-                <label className="block text-xs text-gray-400 mb-1">DeepSeek API Key (Domestic)</label>
-                <div className="relative">
-                  <Key className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
-                  <input
-                    type="password"
-                    value={deepseekKey}
-                    onChange={(e) => setDeepseekKey(e.target.value)}
-                    placeholder="sk-..."
-                    className="w-full bg-slate-800 border border-slate-600 rounded-lg py-2 pl-9 pr-4 text-sm text-white focus:outline-none focus:border-indigo-500 placeholder-gray-600"
-                  />
-                </div>
-                <p className="text-[10px] text-gray-500 mt-1">
-                  模拟集成 Akshare/RQdata 数据逻辑。
-                  <a href="https://platform.deepseek.com/" target="_blank" rel="noreferrer" className="text-indigo-400 hover:underline ml-1">
-                    获取 Key
-                  </a>
-                </p>
-              </div>
-            )}
-
-            {provider === 'OpenAI' && (
-              <div className="animate-fade-in">
-                <label className="block text-xs text-gray-400 mb-1">OpenAI API Key</label>
-                <div className="relative">
-                  <Key className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
-                  <input
-                    type="password"
-                    value={openaiKey}
-                    onChange={(e) => setOpenaiKey(e.target.value)}
-                    placeholder="输入 OpenAI Key"
-                    className="w-full bg-slate-800 border border-slate-600 rounded-lg py-2 pl-9 pr-4 text-sm text-white focus:outline-none focus:border-blue-500 placeholder-gray-600"
-                  />
-                </div>
-              </div>
-            )}
+            {/* 前端不再输入或存储任何 API Key，密钥仅由服务器环境变量统一管理 */}
+            <p className="text-[11px] text-gray-500 leading-relaxed">
+              当前仅需在此处选择 <span className="font-semibold text-gray-200">AI 引擎</span>，
+              所有 OpenAI / DeepSeek API Key 均由服务器统一配置与托管，前端不会保存或上传任何密钥信息。
+            </p>
           </div>
         </div>
 
@@ -242,12 +206,10 @@ export default function App() {
     }
   }, [holdings]);
 
-  const handleSettingsSave = (newProvider: AIProvider, deepseekKey: string, openaiKey: string) => {
-      setProvider(newProvider);
-      if (deepseekKey) localStorage.setItem('deepseek_api_key', deepseekKey);
-      if (openaiKey) localStorage.setItem('openai_api_key', openaiKey);
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify({ provider: newProvider }));
-  };
+  const handleSettingsSave = (newProvider: AIProvider) => {
+    setProvider(newProvider);
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ provider: newProvider }));
+  };  
 
   const handleManualRefresh = async (overrideProvider?: AIProvider) => {
     setIsLoadingData(true);
@@ -529,7 +491,7 @@ export default function App() {
                 <div className="flex-1">
                     <p className="text-sm">
                       <span className="font-bold">演示模式：</span> 
-                      请点击右上角设置图标 <Settings className="w-3 h-3 inline" /> 配置 API Key 以获取实时数据。
+                      请点击右上角设置图标 <Settings className="w-3 h-3 inline" /> 选择 AI 引擎以获取实时数据（由服务器统一提供）。
                     </p>
                 </div>
             </div>
@@ -547,7 +509,7 @@ export default function App() {
                             onClick={() => setIsSettingsOpen(true)} 
                             className="text-xs underline mt-2 hover:text-white"
                         >
-                            去配置 API Key
+                            去选择 AI 引擎
                         </button>
                     )}
                 </div>
