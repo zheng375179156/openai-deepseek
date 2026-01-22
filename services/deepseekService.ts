@@ -1,33 +1,36 @@
 
 import { Hotspot, NewsItem, TrackingRecord, Holding, InvestorProfile, MarketSentiment } from "../types";
 
-const getApiKey = () => {
-  // Try to get from localStorage first (user configured)
-  const storedKey = localStorage.getItem('deepseek_api_key');
-  if (storedKey) return storedKey;
-  
-  // Fallback to environment variable (for build-time)
-  // @ts-ignore - Vite environment variable
-  const envKey = import.meta.env.VITE_DEEPSEEK_API_KEY;
-  if (envKey) return envKey;
-  
-  throw new Error("DeepSeek API Key missing. Please configure it in settings.");
-};
-
 const callApi = async (endpoint: string, body: any) => {
-  const apiKey = getApiKey();
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
-      'x-deepseek-key': apiKey
+      'Content-Type': 'application/json'
     },
     body: JSON.stringify(body)
   });
   
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
-    throw new Error(error.error || `API Error: ${response.status}`);
+    let payloadText = "";
+    try {
+      payloadText = await response.text();
+    } catch {}
+
+    let message = "";
+    try {
+      const parsed = payloadText ? JSON.parse(payloadText) : null;
+      message =
+        parsed?.error ||
+        parsed?.message ||
+        parsed?.hint ||
+        (parsed?.details ? JSON.stringify(parsed.details) : "");
+    } catch {}
+
+    if (!message) {
+      message = payloadText || `${response.status} ${response.statusText}`.trim();
+    }
+
+    throw new Error(`[${response.status}] ${message}`.trim());
   }
   
   return await response.json();

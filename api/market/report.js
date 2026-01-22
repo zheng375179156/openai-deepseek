@@ -79,8 +79,11 @@ export default async function handler(req, res) {
     } else {
       // OpenAI Implementation
       const apiKey = req.headers['x-openai-key'] || env.OPENAI_API_KEY;
-      if (!apiKey) {
-        return res.status(400).json({ error: 'OpenAI API Key missing' });
+      if (!apiKey || apiKey.trim() === '') {
+        return res.status(400).json({ 
+          error: 'OpenAI API Key missing',
+          hint: '请在服务器环境变量中配置 OPENAI_API_KEY，或在本地开发时设置环境变量'
+        });
       }
 
       const SYSTEM_INSTRUCTION_MARKET = `
@@ -144,12 +147,44 @@ CURRENT DATETIME: ${currentTimeStr}
       });
 
       if (!openaiResponse.ok) {
-        throw new Error(`OpenAI API Error: ${openaiResponse.status}`);
+        const errorText = await openaiResponse.text().catch(() => '');
+        let errorMsg = `OpenAI API Error: ${openaiResponse.status}`;
+        let errorCode = '';
+        let errorType = '';
+        
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMsg = errorJson.error?.message || errorJson.error?.code || errorMsg;
+          errorCode = errorJson.error?.code || '';
+          errorType = errorJson.error?.type || '';
+        } catch {
+          if (errorText) errorMsg += ` - ${errorText}`;
+        }
+        
+        // 识别常见错误类型
+        if (openaiResponse.status === 401) {
+          throw new Error('OpenAI API Key 无效或已过期。请检查环境变量 OPENAI_API_KEY 是否正确。');
+        } else if (openaiResponse.status === 403) {
+          throw new Error('OpenAI 账户访问被拒绝。可能原因：1) 账户未激活付费计划 2) API Key 权限不足 3) 账户被限制。请访问 https://platform.openai.com/account/billing 检查账户状态。');
+        } else if (openaiResponse.status === 429) {
+          throw new Error('OpenAI API 请求频率超限。请稍后重试，或检查账户配额限制。');
+        } else if (errorCode === 'insufficient_quota' || errorMsg.includes('quota') || errorMsg.includes('billing')) {
+          throw new Error('OpenAI 账户配额不足或未设置付费方式。请访问 https://platform.openai.com/account/billing 添加付款方式并充值。');
+        } else if (errorCode === 'model_not_found' || errorMsg.includes('gpt-4.1')) {
+          throw new Error('模型不存在。请检查使用的模型名称是否正确（gpt-4.1 可能不存在，请使用 gpt-4 或 gpt-3.5-turbo）。');
+        }
+        
+        throw new Error(errorMsg);
       }
 
       const openaiData = await openaiResponse.json();
       const content = openaiData?.choices?.[0]?.message?.content || "{}";
-      return res.status(200).json(JSON.parse(content));
+      try {
+        return res.status(200).json(JSON.parse(content));
+      } catch (parseError) {
+        console.error("JSON Parse Error:", parseError, "Content:", content);
+        throw new Error(`Failed to parse OpenAI response: ${parseError.message}`);
+      }
     }
   } catch (error) {
     const isTimeout = error?.cause?.code === 'UND_ERR_CONNECT_TIMEOUT' || error?.code === 'UND_ERR_CONNECT_TIMEOUT';
@@ -171,9 +206,26 @@ CURRENT DATETIME: ${currentTimeStr}
       });
     }
 
-    return res.status(500).json({
-      error: 'Internal Server Error',
+    // 根据错误类型返回合适的 HTTP 状态码
+    let httpStatus = 500;
+    let hint = '请查看服务器日志获取详细错误信息';
+    
+    if (details.message?.includes('API Key') || details.message?.includes('无效') || details.message?.includes('已过期')) {
+      httpStatus = 400;
+      hint = '请检查服务器环境变量配置：OPENAI_API_KEY 或 DEEPSEEK_API_KEY';
+    } else if (details.message?.includes('未激活') || details.message?.includes('配额不足') || details.message?.includes('付费')) {
+      httpStatus = 402; // Payment Required
+      hint = '请访问 OpenAI 平台检查账户状态和付费设置：https://platform.openai.com/account/billing';
+    } else if (details.message?.includes('频率超限') || details.message?.includes('429')) {
+      httpStatus = 429;
+      hint = 'API 请求频率过高，请稍后重试';
+    }
+    
+    return res.status(httpStatus).json({
+      error: httpStatus === 402 ? 'Payment Required' : httpStatus === 400 ? 'Bad Request' : 'Internal Server Error',
+      message: details.message,
       details,
+      hint
     });
   }
 }

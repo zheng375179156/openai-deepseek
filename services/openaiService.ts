@@ -1,33 +1,38 @@
 import { Hotspot, InvestorProfile, TrackingRecord, NewsItem, Holding, MarketSentiment } from "../types";
 
-const getApiKey = () => {
-  // Try to get from localStorage first (user configured)
-  const storedKey = localStorage.getItem('openai_api_key');
-  if (storedKey) return storedKey;
-  
-  // Fallback to environment variable (for build-time)
-  // @ts-ignore - Vite environment variable
-  const envKey = import.meta.env.VITE_OPENAI_API_KEY;
-  if (envKey) return envKey;
-  
-  throw new Error("OpenAI API Key missing. Please configure it in settings.");
-};
-
 const callApi = async (endpoint: string, body: any) => {
-  const apiKey = getApiKey();
   const res = await fetch(endpoint, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
-      "x-openai-key": apiKey
+      "Content-Type": "application/json"
     },
     body: JSON.stringify(body)
   });
 
   if (!res.ok) {
-    const text = await res.text();
-    console.error("API Error:", text);
-    throw new Error(text);
+    let payloadText = "";
+    try {
+      payloadText = await res.text();
+    } catch {}
+
+    // Try parse structured error from server
+    let message = "";
+    try {
+      const parsed = payloadText ? JSON.parse(payloadText) : null;
+      message =
+        parsed?.error ||
+        parsed?.message ||
+        parsed?.hint ||
+        (parsed?.details ? JSON.stringify(parsed.details) : "");
+    } catch {}
+
+    if (!message) {
+      message = payloadText || `${res.status} ${res.statusText}`.trim();
+    }
+
+    const finalMsg = `[${res.status}] ${message}`.trim();
+    console.error("API Error:", finalMsg);
+    throw new Error(finalMsg);
   }
 
   return res.json();

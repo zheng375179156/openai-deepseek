@@ -501,10 +501,26 @@ export default function App() {
         {errorMsg && (
             <div className="mb-6 bg-red-900/30 border border-red-500/50 text-red-200 p-4 rounded-lg flex items-start gap-3 animate-fade-in">
                 <AlertTriangle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
-                <div>
+                <div className="flex-1">
                     <h3 className="font-bold text-sm mb-1">数据获取中断</h3>
-                    <p className="text-xs opacity-90">{errorMsg}</p>
-                    {errorMsg.includes('Key') && (
+                    <p className="text-xs opacity-90 mb-2">{errorMsg}</p>
+                    {(errorMsg.includes('未激活') || errorMsg.includes('配额不足') || errorMsg.includes('付费') || errorMsg.includes('billing')) && (
+                        <div className="bg-red-950/50 p-3 rounded border border-red-700/50 mt-2">
+                            <p className="text-xs font-semibold mb-1">💡 解决方案：</p>
+                            <p className="text-xs opacity-90 mb-2">
+                                您的 OpenAI 账户可能需要激活付费计划。请访问：
+                            </p>
+                            <a 
+                                href="https://platform.openai.com/account/billing" 
+                                target="_blank" 
+                                rel="noreferrer"
+                                className="text-xs text-blue-300 hover:text-blue-200 underline inline-flex items-center gap-1"
+                            >
+                                前往 OpenAI 账户设置 <ExternalLink className="w-3 h-3" />
+                            </a>
+                        </div>
+                    )}
+                    {errorMsg.includes('Key') && !errorMsg.includes('未激活') && (
                         <button 
                             onClick={() => setIsSettingsOpen(true)} 
                             className="text-xs underline mt-2 hover:text-white"

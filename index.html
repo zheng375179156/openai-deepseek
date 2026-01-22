@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>智投热点助手 - A股投资决策辅助</title>
     <meta name="description" content="智能追踪A股热点，游资动向与AI投资分析" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -24,22 +25,7 @@
         },
       }
     </script>
-    <!-- Polyfill for process.env - API KEY CONFIGURATION -->
     <script>
-      // =================================================================
-      // 🔑 API KEY 配置区域
-      // =================================================================
-      window.process = window.process || { 
-        env: { 
-          // 1. OpenAI Key (需要科学上网)
-          API_KEY: '', 
-          
-          // 2. DeepSeek API Key (国内直连)
-          // 获取地址: https://platform.deepseek.com/
-          DEEPSEEK_API_KEY: '' 
-        } 
-      };
-      
       // Global Error Handler
       window.addEventListener('error', function(e) {
         // Ignore resize observations errors which are benign

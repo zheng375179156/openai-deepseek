@@ -1,6 +1,10 @@
 // 本地开发服务器 - 处理API路由
 import express from 'express';
 import cors from 'cors';
+import { config } from 'dotenv';
+
+// 加载 .env 文件（如果存在）
+config();
 
 const app = express();
 app.use(cors());
@@ -97,6 +101,23 @@ const PORT = process.env.API_PORT || 3001;
 registerRoutes().then(() => {
   app.listen(PORT, () => {
     console.log(`\n📡 API服务器运行在 http://localhost:${PORT}`);
-    console.log(`🔗 API端点: http://localhost:${PORT}/api/*\n`);
+    console.log(`🔗 API端点: http://localhost:${PORT}/api/*`);
+    
+    // 检查环境变量配置
+    const hasOpenAI = process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.trim() !== '';
+    const hasDeepSeek = process.env.DEEPSEEK_API_KEY && process.env.DEEPSEEK_API_KEY.trim() !== '';
+    
+    if (!hasOpenAI && !hasDeepSeek) {
+      console.log(`\n⚠️  警告: 未检测到 API Key 配置`);
+      console.log(`   请创建 .env 文件并配置以下环境变量之一：`);
+      console.log(`   - OPENAI_API_KEY=sk-...`);
+      console.log(`   - DEEPSEEK_API_KEY=sk-...`);
+      console.log(`   或直接在系统环境变量中设置\n`);
+    } else {
+      console.log(`\n✅ 已检测到 API Key:`);
+      if (hasOpenAI) console.log(`   - OpenAI: 已配置`);
+      if (hasDeepSeek) console.log(`   - DeepSeek: 已配置`);
+      console.log(``);
+    }
   });
 });

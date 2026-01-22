@@ -22,19 +22,28 @@
    npm install
    ```
 
-2. **配置API密钥**:
+2. **配置API密钥** (必须):
    
-   在应用设置中配置（推荐）：
-   - 打开应用后，点击右上角 ⚙️ 设置图标
-   - 输入你的 DeepSeek API Key 或 OpenAI API Key
-   - API Key 会保存在浏览器本地存储中
+   **重要**: API Key 必须配置在服务器环境变量中，前端不再处理 Key 配置。
    
-   或者通过环境变量配置（可选）：
+   创建 `.env` 文件（在项目根目录）：
    ```bash
-   # 创建 .env.local 文件
-   DEEPSEEK_API_KEY=your_deepseek_key
-   OPENAI_API_KEY=your_openai_key
+   # OpenAI API Key (需要科学上网)
+   # 获取地址: https://platform.openai.com/api-keys
+   OPENAI_API_KEY=sk-your-openai-api-key-here
+   
+   # DeepSeek API Key (国内直连)
+   # 获取地址: https://platform.deepseek.com/
+   DEEPSEEK_API_KEY=sk-your-deepseek-api-key-here
+   
+   # API 服务器端口 (可选，默认 3001)
+   API_PORT=3001
    ```
+   
+   **注意**: 
+   - 至少需要配置 `OPENAI_API_KEY` 或 `DEEPSEEK_API_KEY` 其中之一
+   - 前端设置中只能选择 AI 引擎类型，不能配置 Key
+   - Key 由服务器统一管理，确保安全性
 
 3. **启动开发服务器**:
    ```bash
